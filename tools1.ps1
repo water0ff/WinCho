@@ -18,6 +18,7 @@
 function Pausa {
   Write-Host ""
   $null = Read-Host "Presiona [Enter] para continuar..."
+    cls
 }
 
 function EsAdmin {
@@ -97,32 +98,81 @@ function Instalar-Winget {
   Pausa
 }
 
-# =========================
-# Catálogo de aplicaciones
-#   - Clave: nombre amigable
-#   - Valor: IDs para cada gestor
-# =========================
-
-# Nota: Puedes agregar/quitar apps sin romper el menú.
 $Apps = @(
-  @{ Nombre="Discord";             ChocoId="discord";                 WingetId="Discord.Discord" }
-  @{ Nombre="Google Chrome";       ChocoId="googlechrome";            WingetId="Google.Chrome" }
-  @{ Nombre="VLC";                 ChocoId="vlc";                     WingetId="VideoLAN.VLC" }
-  @{ Nombre="7-Zip";               ChocoId="7zip";                    WingetId="7zip.7zip" }
-  @{ Nombre="OBS Studio";          ChocoId="obs-studio";              WingetId="OBSProject.OBSStudio" }
-  @{ Nombre="Node.js LTS";         ChocoId="nodejs-lts";              WingetId="OpenJS.NodeJS.LTS" }
-  @{ Nombre="Python 3.x";          ChocoId="python";                  WingetId="Python.Python.3.12" }
-  @{ Nombre="Git";                 ChocoId="git";                     WingetId="Git.Git" }
-  @{ Nombre="Visual Studio Code";  ChocoId="vscode";                  WingetId="Microsoft.VisualStudioCode" }
-  @{ Nombre="FFmpeg";              ChocoId="ffmpeg";                  WingetId="FFmpeg.FFmpeg" }
-  @{ Nombre="ImageMagick";         ChocoId="imagemagick.app";         WingetId="ImageMagick.ImageMagick" }
-  @{ Nombre="yt-dlp";              ChocoId="yt-dlp";                  WingetId="yt-dlp.yt-dlp" }
-  @{ Nombre="VirtualBox";          ChocoId="virtualbox";              WingetId="Oracle.VirtualBox" }
-  @{ Nombre="Tesseract OCR";       ChocoId="tesseract";               WingetId="tesseract-ocr.tesseract" }
-  @{ Nombre="Google Drive";        ChocoId="googledrive";             WingetId="Google.Drive" }
-  @{ Nombre="HandBrake";           ChocoId="handbrake.install";       WingetId="HandBrake.HandBrake" }
-  @{ Nombre="Steam";               ChocoId="steam";                   WingetId="Valve.Steam" }
+  # =========================
+  # Web / Navegación y Nube
+  # =========================
+  @{ Nombre="Google Chrome";  ChocoId="googlechrome";            WingetId="Google.Chrome" }
+  @{ Nombre="Google Drive";   ChocoId="googledrive";             WingetId="Google.Drive" }
+
+  # =========================
+  # Comunicaciones / Productividad
+  # =========================
+  @{ Nombre="Discord";        ChocoId="discord";                 WingetId="Discord.Discord" }
+  @{ Nombre="TeamViewer";     ChocoId="teamviewer";              WingetId="TeamViewer.TeamViewer" }
+  @{ Nombre="TeamSpeak";      ChocoId="teamspeak";               WingetId="TeamSpeakSystems.TeamSpeakClient" } # (TS5 puede diferir)
+  @{ Nombre="Thunderbird ESR";ChocoId="thunderbird";             WingetId="Mozilla.Thunderbird" } # ESR/estable varía por canal
+  @{ Nombre="3CX Desktop App";ChocoId="";                        WingetId="" } # sin ID confiable en ambos gestores
+  @{ Nombre="Microsoft Office 2019 ProPlus (es-ES)"; ChocoId=""; WingetId="" } # C2R/licencia, sin ID estable
+  @{ Nombre="Microsoft Teams Meeting Add-in"; ChocoId="";        WingetId="" } # complemento de Office
+
+  # =========================
+  # Gaming / Launchers y utilidades
+  # =========================
+  @{ Nombre="Steam";          ChocoId="steam";                   WingetId="Valve.Steam" }
+  @{ Nombre="EA app";         ChocoId="";                        WingetId="ElectronicArts.EADesktop" }
+  @{ Nombre="MSI Afterburner";ChocoId="msiafterburner";          WingetId="Guru3D.MSIAfterburner" }
+  @{ Nombre="RivaTuner Statistics Server"; ChocoId="rtss";       WingetId="TechPowerUp.RTSS" }
+  @{ Nombre="Counter-Strike 2"; ChocoId="";                      WingetId="" } # juego (Steam)
+  @{ Nombre="Battlefield 6";  ChocoId="";                        WingetId="" } # juego (EA/Steam)
+  @{ Nombre="A Way Out";      ChocoId="";                        WingetId="" } # juego (EA/Steam)
+  @{ Nombre="Football Life 2026"; ChocoId="";                    WingetId="" } # juego (terceros)
+
+  # =========================
+  # Multimedia / Edición y Streaming
+  # =========================
+  @{ Nombre="VLC media player"; ChocoId="vlc";                   WingetId="VideoLAN.VLC" }
+  @{ Nombre="HandBrake";      ChocoId="handbrake.install";       WingetId="HandBrake.HandBrake" }
+  @{ Nombre="OBS Studio";     ChocoId="obs-studio";              WingetId="OBSProject.OBSStudio" }
+  @{ Nombre="REAPER (x64)";   ChocoId="reaper";                  WingetId="Cockos.REAPER" }
+  @{ Nombre="ImageMagick";    ChocoId="imagemagick.app";         WingetId="ImageMagick.ImageMagick" }
+  @{ Nombre="FFmpeg";         ChocoId="ffmpeg";                  WingetId="FFmpeg.FFmpeg" }
+  @{ Nombre="yt-dlp";         ChocoId="yt-dlp";                  WingetId="yt-dlp.yt-dlp" }
+  @{ Nombre="Native Instruments Guitar Rig 7"; ChocoId="";       WingetId="" } # sin ID confiable
+  @{ Nombre="VEGAS Pro 21";   ChocoId="";                        WingetId="" } # versiones/licencias varían
+  @{ Nombre="Universal Control (PreSonus)"; ChocoId="";          WingetId="" } # puede existir como PreSonus.UniversalControl en algunos equipos
+
+  # =========================
+  # Desarrollo / Herramientas y Virtualización
+  # =========================
+  @{ Nombre="Node.js LTS";    ChocoId="nodejs-lts";              WingetId="OpenJS.NodeJS.LTS" }
+  @{ Nombre="Python 3.12 (x64)"; ChocoId="python";               WingetId="Python.Python.3.12" }
+  @{ Nombre="PowerShell 7 (x64)"; ChocoId="powershell-core";     WingetId="Microsoft.PowerShell" }
+  @{ Nombre="VirtualBox";     ChocoId="virtualbox";              WingetId="Oracle.VirtualBox" }
+  @{ Nombre="Tesseract OCR";  ChocoId="tesseract";               WingetId="tesseract-ocr.tesseract" }
+
+  # =========================
+  # Utilidades del sistema / Archivo
+  # =========================
+  @{ Nombre="7-Zip";          ChocoId="7zip";                    WingetId="7zip.7zip" }
+  @{ Nombre="megatools";      ChocoId="megatools";               WingetId="" } # sin ID oficial en winget
+
+  # =========================
+  # Impresoras / Drivers / Suite de fabricante
+  # =========================
+  @{ Nombre="Brother MFL-Pro Suite DCP-7055W"; ChocoId="";       WingetId="" }
+  @{ Nombre="AMD Chipset Software";            ChocoId="";       WingetId="" } # suele instalarse desde fabricante
+  @{ Nombre="AMD Software (Radeon)";           ChocoId="";       WingetId="" }
+
+  # =========================
+  # Runtimes de alto impacto (.NET)
+  # =========================
+  @{ Nombre=".NET Framework 4.8";              ChocoId="dotnetfx";                     WingetId="Microsoft.DotNet.Framework.4.8" }
+  @{ Nombre=".NET Desktop Runtime 9 (x64)";    ChocoId="dotnet-9.0-desktopruntime";    WingetId="Microsoft.DotNet.DesktopRuntime.9" }
+  @{ Nombre=".NET Desktop Runtime 8 (x64)";    ChocoId="dotnet-desktopruntime";        WingetId="Microsoft.DotNet.DesktopRuntime.8" }
+  @{ Nombre=".NET Framework 3.5 (Windows Feature)"; ChocoId="DotNet3.5";              WingetId="" } # winget no gestiona esta característica
 )
+
 
 # =========================
 # Operaciones por gestor
@@ -145,29 +195,24 @@ function Winget-Listar {
     $i++
   }
 }
-
-function Choco-Instalar {
-  param([string[]]$ids)
+function Choco-Instalar { param([string[]]$ids)
   foreach ($id in $ids) {
+    if ([string]::IsNullOrEmpty($id)) { continue }
     Write-Host "Instalando $id con Chocolatey..." -ForegroundColor Cyan
     cmd /c "choco install $id -y --no-progress"
   }
 }
-
-function Winget-Instalar {
-  param([string[]]$ids)
+function Winget-Instalar { param([string[]]$ids)
   foreach ($id in $ids) {
+    if ([string]::IsNullOrEmpty($id)) { continue }
     Write-Host "Instalando $id con winget..." -ForegroundColor Cyan
-    # --silent para reducir prompts; se aceptan acuerdos automáticamente
     cmd /c "winget install --id `"$id`" --accept-package-agreements --accept-source-agreements --silent"
   }
 }
-
 function Choco-ActualizarTodo {
   Write-Host "Actualizando todas las apps administradas por Chocolatey..." -ForegroundColor Cyan
   cmd /c "choco upgrade all -y --no-progress"
 }
-
 function Winget-ActualizarTodo {
   Write-Host "Actualizando todas las apps administradas por winget..." -ForegroundColor Cyan
   # Primero actualizamos el origen e instalamos upgrades
@@ -180,6 +225,7 @@ function Winget-ActualizarTodo {
 # =========================
 
 function Elegir-Gestor {
+  cls
   Write-Host "====================================="
   Write-Host "  Instalador de Aplicaciones (PS2.0) "
   Write-Host "====================================="
@@ -225,6 +271,7 @@ function Menu-Acciones {
   param([string]$gestor)
 
   while ($true) {
+  cls
     Write-Host "`nGestor activo: $gestor" -ForegroundColor Green
     Write-Host "Acciones:"
     Write-Host "  1) Listar catálogo"
