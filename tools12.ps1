@@ -1,7 +1,6 @@
 function Pausa {
   Write-Host ""
   $null = Read-Host "Presiona [Enter] para continuar..."
-    cls
 }
 
 function EsAdmin {
@@ -41,7 +40,82 @@ function Get-Exe {
   }
   return $null
 }
+# =========================
+# Panel de Progreso en Consola (PS 2.0+)
+# =========================
+$script:PaneLines   = New-Object System.Collections.ArrayList
+$script:PaneTopRow  = 0
+$script:PaneHeight  = 12
+$script:PaneWidth   = 80
 
+function UI-GetWidth {
+  try { return [System.Console]::WindowWidth } catch { return 100 }
+}
+function UI-GetHeight {
+  try { return [System.Console]::WindowHeight } catch { return 30 }
+}
+function UI-WriteAt([int]$col,[int]$row,[string]$text) {
+  try { [System.Console]::SetCursorPosition([Math]::Max(0,$col), [Math]::Max(0,$row)) } catch { }
+  Write-Host ($text.PadRight($script:PaneWidth)) -NoNewline
+}
+
+function UI-InitProgress([string]$titulo) {
+  # Calcula dimensiones y reserva el panel inferior sin limpiar el encabezado.
+  $script:PaneWidth  = [Math]::Max(40, (UI-GetWidth))
+  $totalH            = (UI-GetHeight)
+  $minPanel          = 8     # alto mínimo de panel
+  $script:PaneHeight = [Math]::Max($minPanel, [Math]::Min(18, [int]($totalH * 0.45)))
+  $script:PaneTopRow = $totalH - $script:PaneHeight
+
+  # Dibuja marco del panel
+  $sep = ("-" * $script:PaneWidth)
+  UI-WriteAt 0 ($script:PaneTopRow)       $sep
+  UI-WriteAt 0 ($script:PaneTopRow + 1)   (" Progreso: " + $titulo).PadRight($script:PaneWidth)
+  UI-WriteAt 0 ($script:PaneTopRow + 2)   $sep
+
+  # Limpia el área del panel
+  $script:PaneLines.Clear() | Out-Null
+  for ($r = 3; $r -lt $script:PaneHeight; $r++) {
+    UI-WriteAt 0 ($script:PaneTopRow + $r) ""
+  }
+}
+
+function UI-RefreshProgress {
+  $visible = $script:PaneHeight - 3
+  $start   = [Math]::Max(0, $script:PaneLines.Count - $visible)
+  $slice   = $script:PaneLines[$start..($script:PaneLines.Count-1)] 2>$null
+
+  # Vuelve a pintar el bloque de líneas del panel
+  $row = $script:PaneTopRow + 3
+  foreach ($line in $slice) {
+    $txt = ($line -replace "`r","")
+    if ($txt.Length -gt $script:PaneWidth) { $txt = $txt.Substring(0, $script:PaneWidth) }
+    UI-WriteAt 0 $row $txt
+    $row++
+  }
+  # Rellena espacios si sobran renglones
+  while ($row -lt ($script:PaneTopRow + $script:PaneHeight)) {
+    UI-WriteAt 0 $row ""
+    $row++
+  }
+}
+
+function UI-ProgressLine([string]$text) {
+  [void]$script:PaneLines.Add($text)
+  UI-RefreshProgress
+}
+
+function Run-WithProgress {
+  param(
+    [Parameter(Mandatory=$true)][string]$Title,
+    [Parameter(Mandatory=$true)][string]$Command  # cadena completa para cmd /c
+  )
+  UI-InitProgress $Title
+  UI-ProgressLine ">>> $Title"
+  # Ejecuta y captura salida/errores en tiempo real dentro del panel
+  cmd /c $Command 2>&1 | ForEach-Object { UI-ProgressLine $_ }
+  UI-ProgressLine "<<< FIN: $Title"
+}
 # =========================
 # Verificación / Instalación de gestores
 # =========================
@@ -163,29 +237,26 @@ function Winget-Listar {
 function Choco-Instalar { param([string[]]$ids)
   foreach ($id in $ids) {
     if ([string]::IsNullOrEmpty($id)) { continue }
-    Write-Host "Instalando $id con Chocolatey..." -ForegroundColor Cyan
-    cmd /c "choco install $id -y --no-progress"
+    # Mostrar progreso en panel inferior
+    Run-WithProgress -Title "Chocolatey: instalando $id" -Command "choco install $id -y"
   }
 }
 function Winget-Instalar { param([string[]]$ids)
   foreach ($id in $ids) {
     if ([string]::IsNullOrEmpty($id)) { continue }
-    Write-Host "Instalando $id con winget..." -ForegroundColor Cyan
-    cmd /c "winget install --id `"$id`" --accept-package-agreements --accept-source-agreements --silent"
+    # --accept-* mantiene no-interactividad; sin --silent para ver output
+    Run-WithProgress -Title "winget: instalando $id" -Command "winget install --id `"$id`" --accept-package-agreements --accept-source-agreements --disable-interactivity"
   }
 }
 function Choco-ActualizarTodo {
-  Write-Host "Actualizando todas las apps administradas por Chocolatey..." -ForegroundColor Cyan
-  cmd /c "choco upgrade all -y --no-progress"
+  Run-WithProgress -Title "Chocolatey: actualizar TODO" -Command "choco upgrade all -y"
 }
 function Winget-ActualizarTodo {
-  Write-Host "Actualizando todas las apps administradas por winget..." -ForegroundColor Cyan
-  # Primero actualizamos el origen e instalamos upgrades
-  cmd /c "winget source update"
-  cmd /c "winget upgrade --all --accept-package-agreements --accept-source-agreements --silent"
+  # Mostramos también la actualización del origen, todo en el panel
+  Run-WithProgress -Title "winget: actualizar orígenes" -Command "winget source update"
+  Run-WithProgress -Title "winget: upgrade --all" -Command "winget upgrade --all --accept-package-agreements --accept-source-agreements --disable-interactivity"
 }
 function Elegir-Gestor {
-  cls
   Write-Host "====================================="
   Write-Host "  Instalador de Aplicaciones (PS2.0) "
   Write-Host "====================================="
