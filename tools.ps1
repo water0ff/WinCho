@@ -1,3 +1,65 @@
+function Mostrar-VersionPS {
+  try {
+    if ($PSVersionTable) {
+      $ver = $PSVersionTable.PSVersion
+      $ed  = $PSVersionTable.PSEdition
+    } else {
+      $ver = $host.Version
+      $ed  = "Desktop"
+    }
+  } catch {
+    $ver = $host.Version
+    $ed  = "Desktop"
+  }
+
+  Write-Host ""
+  Write-Host "=====================================" -ForegroundColor Cyan
+  Write-Host ("  PowerShell actual : {0}  ({1})" -f $ver, $ed) -ForegroundColor Cyan
+  Write-Host "=====================================" -ForegroundColor Cyan
+
+  if ($ver.Major -le 2) {
+    Write-Host "Estás en PowerShell 2.x (muy antiguo). Te conviene instalar PowerShell 7 y, si usas módulos legados, considerar Windows PowerShell 5.1." -ForegroundColor Yellow
+  }
+}
+Mostrar-VersionPS
+function Actualizar-PowerShell {
+  param([string]$gestor)
+
+  Write-Host ""
+  Write-Host "Actualización de PowerShell:" -ForegroundColor Green
+  Write-Host "  1) Instalar/Actualizar PowerShell 7 (recomendado, side-by-side)"
+  Write-Host "  2) Información para Windows PowerShell 5.1 (WMF 5.1)"
+  Write-Host "  0) Volver"
+  $opc = Read-Host "Opción"
+
+  if ($opc -eq "1") {
+    if ($gestor -eq "choco") {
+      Choco-Instalar -ids @("powershell-core")
+    } elseif ($gestor -eq "winget") {
+      Winget-Instalar -ids @("Microsoft.PowerShell")
+    } else {
+      Write-Host "Gestor desconocido. Usa Chocolatey o winget." -ForegroundColor Yellow
+    }
+    return
+  }
+
+  if ($opc -eq "2") {
+    Write-Host ""
+    Write-Host "Windows PowerShell 5.1 es la última versión de la rama clásica." -ForegroundColor Cyan
+    Write-Host "Requiere SO compatible y se instala mediante WMF 5.1." -ForegroundColor Cyan
+    Write-Host "Abriré la página oficial para descargar WMF 5.1..." -ForegroundColor Cyan
+    try {
+      Start-Process "https://aka.ms/wmf5download" | Out-Null
+    } catch {
+      Write-Host "No pude abrir el navegador. Abre manualmente: https://aka.ms/wmf5download" -ForegroundColor Yellow
+    }
+    Pausa
+    return
+  }
+
+  return
+}
+
 function Pausa {
   Write-Host ""
   $null = Read-Host "Presiona [Enter] para continuar..."
@@ -309,6 +371,7 @@ function Menu-Acciones {
     Write-Host "  2) Instalar TODO el catálogo"
     Write-Host "  3) Instalar apps seleccionadas"
     Write-Host "  4) Actualizar TODO (ya instaladas)"
+    Write-Host "  5) Actualizar PowerShell (7 recomendado / info 5.1)"
     Write-Host "  9) Cambiar de gestor"
     Write-Host "  0) Salir"
     $acc = Read-Host "Opción"
@@ -351,6 +414,10 @@ function Menu-Acciones {
     }
     elseif ($acc -eq "4") {
       if ($gestor -eq "choco") { Choco-ActualizarTodo } else { Winget-ActualizarTodo }
+      Pausa
+    }
+    elseif ($acc -eq "5") {
+      Actualizar-PowerShell -gestor $gestor
       Pausa
     }
     elseif ($acc -eq "9") {
