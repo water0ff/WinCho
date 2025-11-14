@@ -89,7 +89,7 @@ function TryEnable-TLS {
 }
 function Get-Exe {
   param([string]$name)
-  $paths = $env:PATH -split ';'
+  $paths = $env:PATH -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
   foreach ($p in $paths) {
     $candidate = Join-Path $p $name
     if (Test-Path $candidate) { return $candidate }
