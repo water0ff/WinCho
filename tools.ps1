@@ -663,7 +663,8 @@ function Winget-ActualizarTodo {
   Run-WithProgress -Title "winget: upgrade --all" -Command "winget upgrade --all --accept-package-agreements --accept-source-agreements --disable-interactivity"
 }
 function Elegir-Gestor {
-  Write-Host "==============r=2===================="
+  cls
+  Write-Host "================2===================="
   Write-Host "  Instalador de Aplicaciones (PS2.0) "
   Write-Host "====================================="
   Write-Host ""
