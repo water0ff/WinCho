@@ -393,8 +393,6 @@ function Buscar-Paquete {
     Write-Host ""
     $sel = Read-Host "Escribe tu opción"
     if ($sel -eq "0" -or [string]::IsNullOrWhiteSpace($sel)) {
-      Write-Host "Cancelado." -ForegroundColor Yellow
-      Pausa
       return
     }
     if ($sel -match '^[mM]$') {
