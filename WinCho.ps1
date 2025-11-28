@@ -601,65 +601,262 @@ function Instalar-Winget {
   }
   Pausa
 }
-
-$Apps = @(
-  # =========================
+$script:ConfigRoot = "C:\Temp\WinCho"
+$script:ConfigFile = Join-Path $script:ConfigRoot "apps.json"
+$script:DefaultApps = @(
   # Web / Navegación y Nube
   # =========================
-  @{ Nombre="Google Chrome";  ChocoId="googlechrome";            WingetId="Google.Chrome" }
-  @{ Nombre="Google Drive";   ChocoId="googledrive";             WingetId="Google.Drive" }
-  # =========================
+  @{ Seccion="Web / Navegación y Nube"; Nombre="Google Chrome";  ChocoId="googlechrome";            WingetId="Google.Chrome" }
+  @{ Seccion="Web / Navegación y Nube"; Nombre="Google Drive";   ChocoId="googledrive";             WingetId="Google.Drive" }
   # Comunicaciones / Productividad
   # =========================
-  @{ Nombre="Discord";        ChocoId="discord";                 WingetId="Discord.Discord" }
-  @{ Nombre="TeamViewer";     ChocoId="teamviewer";              WingetId="TeamViewer.TeamViewer" }
-  @{ Nombre="TeamSpeak";      ChocoId="teamspeak";               WingetId="TeamSpeakSystems.TeamSpeakClient" } # (TS5 puede diferir)
-  @{ Nombre="Thunderbird ESR";ChocoId="thunderbird";             WingetId="Mozilla.Thunderbird" } # ESR/estable varía por canal
-  # =========================
+  @{ Seccion="Comunicaciones / Productividad"; Nombre="Discord";        ChocoId="discord";                 WingetId="Discord.Discord" }
+  @{ Seccion="Comunicaciones / Productividad"; Nombre="TeamViewer";     ChocoId="teamviewer";              WingetId="TeamViewer.TeamViewer" }
+  @{ Seccion="Comunicaciones / Productividad"; Nombre="TeamSpeak";      ChocoId="teamspeak";               WingetId="TeamSpeakSystems.TeamSpeakClient" }
+  @{ Seccion="Comunicaciones / Productividad"; Nombre="Thunderbird ESR";ChocoId="thunderbird";             WingetId="Mozilla.Thunderbird" }
   # Gaming / Launchers y utilidades
   # =========================
-  @{ Nombre="Steam";          ChocoId="steam";                   WingetId="Valve.Steam" }
-  @{ Nombre="EA app";         ChocoId="";                        WingetId="ElectronicArts.EADesktop" }
-  @{ Nombre="MSI Afterburner";ChocoId="msiafterburner";          WingetId="Guru3D.MSIAfterburner" }
-  @{ Nombre="RivaTuner Statistics Server"; ChocoId="rtss";       WingetId="TechPowerUp.RTSS" }
-  # =========================
+  @{ Seccion="Gaming / Launchers"; Nombre="Steam";          ChocoId="steam";                   WingetId="Valve.Steam" }
+  @{ Seccion="Gaming / Launchers"; Nombre="EA app";         ChocoId="";                        WingetId="ElectronicArts.EADesktop" }
+  @{ Seccion="Gaming / Launchers"; Nombre="MSI Afterburner";ChocoId="msiafterburner";          WingetId="Guru3D.MSIAfterburner" }
+  @{ Seccion="Gaming / Launchers"; Nombre="RivaTuner Statistics Server"; ChocoId="rtss";       WingetId="TechPowerUp.RTSS" }
   # Multimedia / Edición y Streaming
   # =========================
-  @{ Nombre="VLC media player"; ChocoId="vlc";                   WingetId="VideoLAN.VLC" }
-  @{ Nombre="HandBrake";      ChocoId="handbrake.install";       WingetId="HandBrake.HandBrake" }
-  @{ Nombre="OBS Studio";     ChocoId="obs-studio";              WingetId="OBSProject.OBSStudio" }
-  @{ Nombre="REAPER (x64)";   ChocoId="reaper";                  WingetId="Cockos.REAPER" }
-  @{ Nombre="ImageMagick";    ChocoId="imagemagick.app";         WingetId="ImageMagick.ImageMagick" }
-  @{ Nombre="FFmpeg";         ChocoId="ffmpeg";                  WingetId="FFmpeg.FFmpeg" }
-  @{ Nombre="yt-dlp";         ChocoId="yt-dlp";                  WingetId="yt-dlp.yt-dlp" }
-  # =========================
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="VLC media player"; ChocoId="vlc";             WingetId="VideoLAN.VLC" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="HandBrake";      ChocoId="handbrake.install"; WingetId="HandBrake.HandBrake" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="OBS Studio";     ChocoId="obs-studio";        WingetId="OBSProject.OBSStudio" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="REAPER (x64)";   ChocoId="reaper";            WingetId="Cockos.REAPER" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="ImageMagick";    ChocoId="imagemagick.app";   WingetId="ImageMagick.ImageMagick" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="FFmpeg";         ChocoId="ffmpeg";            WingetId="FFmpeg.FFmpeg" }
+  @{ Seccion="Multimedia / Edición y Streaming"; Nombre="yt-dlp";         ChocoId="yt-dlp";            WingetId="yt-dlp.yt-dlp" }
   # Desarrollo / Herramientas y Virtualización
   # =========================
-  @{ Nombre="Node.js LTS";    ChocoId="nodejs-lts";              WingetId="OpenJS.NodeJS.LTS" }
-  @{ Nombre="Python 3.12 (x64)"; ChocoId="python";               WingetId="Python.Python.3.12" }
-  @{ Nombre="PowerShell 7 (x64)"; ChocoId="powershell-core";     WingetId="Microsoft.PowerShell" }
-  @{ Nombre="VirtualBox";     ChocoId="virtualbox";              WingetId="Oracle.VirtualBox" }
-  @{ Nombre="Tesseract OCR";  ChocoId="tesseract";               WingetId="tesseract-ocr.tesseract" }
-  # =========================
+  @{ Seccion="Desarrollo / Herramientas y Virtualización"; Nombre="Node.js LTS";             ChocoId="nodejs-lts";           WingetId="OpenJS.NodeJS.LTS" }
+  @{ Seccion="Desarrollo / Herramientas y Virtualización"; Nombre="Python 3.12 (x64)";       ChocoId="python";               WingetId="Python.Python.3.12" }
+  @{ Seccion="Desarrollo / Herramientas y Virtualización"; Nombre="PowerShell 7 (x64)";      ChocoId="powershell-core";      WingetId="Microsoft.PowerShell" }
+  @{ Seccion="Desarrollo / Herramientas y Virtualización"; Nombre="VirtualBox";              ChocoId="virtualbox";           WingetId="Oracle.VirtualBox" }
+  @{ Seccion="Desarrollo / Herramientas y Virtualización"; Nombre="Tesseract OCR";           ChocoId="tesseract";            WingetId="tesseract-ocr.tesseract" }
   # Utilidades del sistema / Archivo
   # =========================
-  @{ Nombre="7-Zip";          ChocoId="7zip";                    WingetId="7zip.7zip" }
-  # =========================
+  @{ Seccion="Utilidades del sistema / Archivo"; Nombre="7-Zip";          ChocoId="7zip";          WingetId="7zip.7zip" }
   # Runtimes de alto impacto (.NET)
   # =========================
-  @{ Nombre=".NET Framework 4.8";              ChocoId="dotnetfx";                     WingetId="Microsoft.DotNet.Framework.4.8" }
-  @{ Nombre=".NET Desktop Runtime 9 (x64)";    ChocoId="dotnet-9.0-desktopruntime";    WingetId="Microsoft.DotNet.DesktopRuntime.9" }
-  @{ Nombre=".NET Desktop Runtime 8 (x64)";    ChocoId="dotnet-desktopruntime";        WingetId="Microsoft.DotNet.DesktopRuntime.8" }
+  @{ Seccion="Runtimes .NET"; Nombre=".NET Framework 4.8";              ChocoId="dotnetfx";                     WingetId="Microsoft.DotNet.Framework.4.8" }
+  @{ Seccion="Runtimes .NET"; Nombre=".NET Desktop Runtime 9 (x64)";    ChocoId="dotnet-9.0-desktopruntime";    WingetId="Microsoft.DotNet.DesktopRuntime.9" }
+  @{ Seccion="Runtimes .NET"; Nombre=".NET Desktop Runtime 8 (x64)";    ChocoId="dotnet-desktopruntime";        WingetId="Microsoft.DotNet.DesktopRuntime.8" }
 )
+function Ensure-ConfigFolder {
+    if (-not (Test-Path $script:ConfigRoot)) {
+        New-Item -ItemType Directory -Path $script:ConfigRoot -Force | Out-Null
+    }
+}
+function Guardar-Catalogo {
+    param(
+        [Parameter(Mandatory=$true)]
+        [array]$Apps
+    )
+    Ensure-ConfigFolder
+    $obj = [PSCustomObject]@{
+        Version = 1
+        Apps    = $Apps
+    }
+    $json = $obj | ConvertTo-Json -Depth 6
+    $json | Set-Content -Path $script:ConfigFile -Encoding UTF8
+}
+function Cargar-Catalogo {
+    Ensure-ConfigFolder
+    if (Test-Path $script:ConfigFile) {
+        try {
+            $raw  = Get-Content $script:ConfigFile -Raw -ErrorAction Stop
+            $json = $raw | ConvertFrom-Json -ErrorAction Stop
+            if ($json -and $json.Apps) {
+                return @($json.Apps)
+            }
+        } catch {
+            Write-Host "No se pudo leer apps.json, se usará el catálogo por omisión." -ForegroundColor Yellow
+        }
+    }
+    $appsDef = @($script:DefaultApps)
+    Guardar-Catalogo -Apps $appsDef
+    return $appsDef
+}
+$script:Apps = Cargar-Catalogo
+Set-Variable -Name Apps -Scope Script -Value $script:Apps
+function Editar-Catalogo {
+    UI-Titulo -Titulo "Editor de catálogo" -Subtitulo "Archivo: $($script:ConfigFile)"
+    Write-Host "Opciones del catálogo:" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  1) Eliminar aplicaciones seleccionadas" -ForegroundColor Cyan
+    Write-Host "  2) Eliminar TODO el catálogo"           -ForegroundColor Cyan
+    Write-Host "  3) Agregar una aplicación manualmente"  -ForegroundColor Cyan
+    Write-Host "  4) Regenerar catálogo por omisión"      -ForegroundColor DarkYellow
+    Write-Host "  0) Volver"                              -ForegroundColor Yellow
+    Write-Host ""
+    UI-Hint "Este catálogo es portable: copia apps.json a otra PC para reinstalar lo mismo."
+    $op = Ask "Opción"
+    switch ($op) {
+        "1" {
+            Choco-Listar  # o Winget-Listar, da igual, solo es para mostrar índices
+            $sel  = Ask "Números a eliminar (ej. 1,3,5)"
+            $nums = $sel -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' }
+            if ($nums.Count -eq 0) { Write-Host "Nada que eliminar." -ForegroundColor Yellow; return }
+            $indices = $nums | ForEach-Object { [int]$_ - 1 } | Sort-Object -Descending
+            foreach ($idx in $indices) {
+                if ($idx -ge 0 -and $idx -lt $Apps.Count) {
+                    Write-Host "Eliminando: $($Apps[$idx].Nombre)" -ForegroundColor DarkYellow
+                    $Apps.RemoveAt($idx)
+                }
+            }
+            Guardar-Catalogo -Apps $Apps
+            Write-Host "Catálogo actualizado." -ForegroundColor Green
+        }
+        "2" {
+            $conf = Ask "Esto dejará el catálogo vacío. ¿Seguro? (S/N)"
+            if ($conf -match '^[sSyY]$') {
+                $script:Apps = @()
+                Set-Variable -Name Apps -Scope Script -Value $script:Apps
+                Guardar-Catalogo -Apps $Apps
+                Write-Host "Catálogo vacío guardado." -ForegroundColor Green
+            }
+        }
+        "3" {
+            Agregar-App-Manual
+        }
+        "4" {
+            $conf = Ask "Se perderán cambios y se volverá al catálogo por omisión. ¿Continuar? (S/N)"
+            if ($conf -match '^[sSyY]$') {
+                $script:Apps = @($script:DefaultApps)
+                Set-Variable -Name Apps -Scope Script -Value $script:Apps
+                Guardar-Catalogo -Apps $Apps
+                Write-Host "Catálogo restaurado a los valores por omisión." -ForegroundColor Green
+            }
+        }
+        default { return }
+    }
+}
+function Agregar-App-Manual {
+    UI-Titulo -Titulo "Agregar aplicación al catálogo" -Subtitulo "apps.json"
+    $nombre = Ask "Nombre descriptivo de la aplicación"
+    if ([string]::IsNullOrWhiteSpace($nombre)) { Write-Host "Nombre vacío, cancelado." -ForegroundColor Yellow; return }
+
+    $chocoId  = Ask "Chocolatey ID (vacío si no aplica)"
+    $wingetId = Ask "winget ID (vacío si no aplica)"
+
+    # Obtener secciones existentes
+    $secciones = $Apps | Select-Object -ExpandProperty Seccion -Unique | Sort-Object
+    Write-Host "`nSecciones existentes:" -ForegroundColor White
+    $i = 1
+    foreach ($s in $secciones) {
+        Write-Host "  $i) $s"
+        $i++
+    }
+    Write-Host "  N) Crear nueva sección" -ForegroundColor Cyan
+    Write-Host ""
+    $selSec = Ask "Elige sección (número) o N"
+
+    $seccionFinal = $null
+    if ($selSec -match '^[nN]$') {
+        $seccionFinal = Ask "Nombre de la nueva sección"
+        if ([string]::IsNullOrWhiteSpace($seccionFinal)) {
+            Write-Host "Sección vacía, cancelado." -ForegroundColor Yellow
+            return
+        }
+    }
+    elseif ($selSec -match '^\d+$') {
+        $idx = [int]$selSec - 1
+        if ($idx -ge 0 -and $idx -lt $secciones.Count) {
+            $seccionFinal = $secciones[$idx]
+        } else {
+            Write-Host "Índice inválido, cancelado." -ForegroundColor Yellow
+            return
+        }
+    }
+    else {
+        Write-Host "Entrada inválida, cancelado." -ForegroundColor Yellow
+        return
+    }
+
+    $newApp = @{
+        Seccion = $seccionFinal
+        Nombre  = $nombre
+        ChocoId = $chocoId
+        WingetId= $wingetId
+    }
+    $Apps += New-Object PSObject -Property $newApp
+    Guardar-Catalogo -Apps $Apps
+    Write-Host "`nAplicación agregada al catálogo." -ForegroundColor Green
+}
+function Crear-Catalogo-Desde-Instaladas {
+    param([string]$gestor)
+    UI-Titulo -Titulo "Crear catálogo desde apps instaladas" -Subtitulo "Gestor: $gestor"
+    $conf = Ask "Esto sobrescribirá el catálogo actual. ¿Continuar? (S/N)"
+    if ($conf -notmatch '^[sSyY]$') { return }
+    $nuevas = @()
+    if ($gestor -eq "winget") {
+        Write-Host "Leyendo aplicaciones instaladas con winget..." -ForegroundColor Cyan
+        $raw = winget list --source winget | Select-Object -Skip 1
+        foreach ($line in $raw) {
+            $txt = $line.Trim()
+            if (-not $txt) { continue }
+            $cols = $txt -split "\s{2,}"
+            if ($cols.Count -ge 2) {
+                $nombre = $cols[0]
+                $id     = $cols[1]
+                $app = @{
+                    Seccion = "Auto (winget)"
+                    Nombre  = $nombre
+                    ChocoId = ""
+                    WingetId= $id
+                }
+                $nuevas += New-Object PSObject -Property $app
+            }
+        }
+    }
+    elseif ($gestor -eq "choco") {
+        Write-Host "Leyendo aplicaciones instaladas con Chocolatey..." -ForegroundColor Cyan
+        $raw = choco list --local-only --limit-output | Where-Object { $_ -match '\|' }
+        foreach ($line in $raw) {
+            $cols = $line -split "\|"
+            if ($cols.Count -ge 2) {
+                $nombre = $cols[0]
+                $ver    = $cols[1]
+                $app = @{
+                    Seccion = "Auto (choco)"
+                    Nombre  = $nombre
+                    ChocoId = $nombre
+                    WingetId= ""
+                }
+                $nuevas += New-Object PSObject -Property $app
+            }
+        }
+    }
+    if ($nuevas.Count -eq 0) {
+        Write-Host "No se encontraron aplicaciones instaladas o no se pudo leer la lista." -ForegroundColor Yellow
+        return
+    }
+    $backup = "$($script:ConfigFile).bak.$((Get-Date).ToString('yyyyMMddHHmmss'))"
+    if (Test-Path $script:ConfigFile) {
+        Copy-Item $script:ConfigFile $backup -Force
+        Write-Host "Respaldo creado: $backup" -ForegroundColor DarkGray
+    }
+
+    $script:Apps = $nuevas
+    Set-Variable -Name Apps -Scope Script -Value $script:Apps
+    Guardar-Catalogo -Apps $Apps
+    Write-Host "Catálogo reemplazado por la lista de aplicaciones instaladas." -ForegroundColor Green
+}
 function Choco-Listar {
   Write-Host "`nCatálogo disponible (Chocolatey IDs):`n" -ForegroundColor Cyan
+  Write-Host "Archivo de catálogo: $($script:ConfigFile)" -ForegroundColor DarkGray
   $half = [math]::Ceiling($Apps.Count / 2)
   for ($i = 0; $i -lt $half; $i++) {
     $leftIndex  = $i
     $rightIndex = $i + $half
-    $leftText = "[{0,2}] {1,-30} -> {2,-25}" -f ($leftIndex + 1), $Apps[$leftIndex].Nombre, $Apps[$leftIndex].ChocoId
+    $leftApp  = $Apps[$leftIndex]
+    $leftText = "[{0,2}] {1,-30} -> {2,-25} [{3}]" -f ($leftIndex + 1), $leftApp.Nombre, $leftApp.ChocoId, $leftApp.Seccion
     if ($rightIndex -lt $Apps.Count) {
-      $rightText = "[{0,2}] {1,-30} -> {2}" -f ($rightIndex + 1), $Apps[$rightIndex].Nombre, $Apps[$rightIndex].ChocoId
+      $rightApp  = $Apps[$rightIndex]
+      $rightText = "[{0,2}] {1,-30} -> {2} [{3}]" -f ($rightIndex + 1), $rightApp.Nombre, $rightApp.ChocoId, $rightApp.Seccion
     } else {
       $rightText = ""
     }
@@ -710,6 +907,8 @@ function Elegir-Gestor {
   Write-Host ""
   UI-Hint "Consejo: si no sabes cuál usar, empieza por Chocolatey (1)."
   $op = Ask "Opción"
+  Write-Host "Catálogo actual: $($script:ConfigFile)" -ForegroundColor DarkGray
+  Write-Host "Puedes copiar este archivo a otra PC para reinstalar las mismas aplicaciones." -ForegroundColor DarkGray
   if ($op -eq "1") { return "choco" }
   if ($op -eq "2") { return "winget" }
   if ($op -eq "0") { return $null }
@@ -751,6 +950,8 @@ function Menu-Acciones {
     Write-Host "  4) Actualizar TODO (ya instaladas)"         -ForegroundColor Cyan
     Write-Host "  5) Actualizar PowerShell (7 recomendado)"   -ForegroundColor Cyan
     Write-Host "  6) Buscar paquete e instalar"               -ForegroundColor Cyan
+    Write-Host "  7) Editar catálogo (archivo apps.json)"     -ForegroundColor Cyan
+    Write-Host "  8) Crear catálogo desde apps instaladas"    -ForegroundColor DarkYellow
     Write-Host ""
     Write-Host "  9) Cambiar de gestor"                       -ForegroundColor DarkYellow
     Write-Host "  0) Salir"                                   -ForegroundColor Yellow
@@ -802,6 +1003,14 @@ function Menu-Acciones {
     }
     elseif ($acc -eq "6") {
       Buscar-Paquete -gestor $gestor
+    }
+    elseif ($acc -eq "7") {
+      Editar-Catalogo
+      Pausa
+    }
+    elseif ($acc -eq "8") {
+      Crear-Catalogo-Desde-Instaladas -gestor $gestor
+      Pausa
     }
     elseif ($acc -eq "9") {
       return "cambiar"
