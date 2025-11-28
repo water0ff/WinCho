@@ -2,11 +2,14 @@ cls
 function Pausa {
   Write-Host ""
   Write-Host "Presiona [Enter] para continuar..." -ForegroundColor Yellow -NoNewline
-  $null = ask
+  [void][System.Console]::ReadLine()
 }
 function Ask([string]$msg) {
-    Write-Host $msg -ForegroundColor Yellow -NoNewline
-    return ask ":"
+    if (-not [string]::IsNullOrWhiteSpace($msg)) {
+        Write-Host $msg -ForegroundColor Yellow -NoNewline
+        Write-Host ": " -NoNewline
+    }
+    return [System.Console]::ReadLine()
 }
 function UI-GetWidth {
   try { return [System.Console]::WindowWidth } catch { return 80 }
@@ -70,7 +73,7 @@ function Actualizar-PowerShell {
   Write-Host "  1) Instalar/Actualizar PowerShell 7 (recomendado, side-by-side)"
   Write-Host "  2) Información para Windows PowerShell 5.1 (WMF 5.1)"
   Write-Host "  0) Volver"
-  $opc = ask "Opción"
+  $opc = Ask "Opción"
   if ($opc -eq "1") {
     if ($gestor -eq "choco") {
       Choco-Instalar -ids @("powershell-core")
@@ -309,7 +312,7 @@ function Buscar-Paquete {
   param([string]$gestor)
   cls
   Write-Host "=== Buscar e instalar paquete ($gestor) ===" -ForegroundColor Cyan
-  $texto = ask "Escribe el nombre del paquete a buscar"
+  $texto = Ask "Escribe el nombre del paquete a buscar"
   if ([string]::IsNullOrWhiteSpace($texto)) {
     Write-Host "Texto vacío. Cancelado." -ForegroundColor Yellow
     Pausa
