@@ -820,25 +820,29 @@ function Crear-Catalogo-Desde-Instaladas {
     $conf = Ask "Esto sobrescribirá el catálogo actual. ¿Continuar? (S/N)"
     if ($conf -notmatch '^[sSyY]$') { return }
     $nuevas = @()
-    if ($gestor -eq "winget") {
+        if ($gestor -eq "winget") {
         Write-Host "Leyendo aplicaciones instaladas con winget..." -ForegroundColor Cyan
         $raw = winget list --source winget | Select-Object -Skip 1
         foreach ($line in $raw) {
             $txt = $line.Trim()
             if (-not $txt) { continue }
             $cols = $txt -split "\s{2,}"
-            if ($cols.Count -ge 2) {
-                $nombre = $cols[0]
-                $id     = $cols[1]
-                $app = @{
-                    Seccion = "Auto (winget)"
-                    Nombre  = $nombre
-                    ChocoId = ""
-                    WingetId= $id
-                }
-                $nuevas += New-Object PSObject -Property $app
+            if ($cols.Count -lt 2) { continue }
+            $nombre = $cols[0]
+            $id     = $cols[1]
+            if (Es-NombreRaro $nombre) { continue }
+            if ($id -match '^\d+(\.\d+)?\s+(KB|MB|GB)\s*/' -or $id -match '^\d+%$') {
+                continue
             }
+            $app = @{
+                Seccion = "Auto (winget)"
+                Nombre  = $nombre
+                ChocoId = ""
+                WingetId= $id
+            }
+            $nuevas += New-Object PSObject -Property $app
         }
+      }
     }
     elseif ($gestor -eq "choco") {
         Write-Host "Leyendo aplicaciones instaladas con Chocolatey..." -ForegroundColor Cyan
@@ -872,6 +876,18 @@ function Crear-Catalogo-Desde-Instaladas {
     Set-Variable -Name Apps -Scope Script -Value $script:Apps
     Guardar-Catalogo -Apps $Apps
     Write-Host "Catálogo reemplazado por la lista de aplicaciones instaladas." -ForegroundColor Green
+}
+function Es-NombreRaro {
+    param([string]$Nombre)
+    if ([string]::IsNullOrWhiteSpace($Nombre)) { return $true }
+    if ($Nombre.Length -gt 80) { return $true }
+    $chars     = $Nombre.ToCharArray()
+    $alnum     = ($chars | Where-Object { $_ -match '[0-9A-Za-zÁÉÍÓÚáéíóúÑñ]' }).Count
+    $nonSpace  = ($chars | Where-Object { -not [char]::IsWhiteSpace($_) }).Count
+    if ($nonSpace -eq 0) { return $true }
+    $ratio = $alnum / [double]$nonSpace
+    if ($ratio -lt 0.2) { return $true }
+    return $false
 }
 function Choco-Listar {
     UI-Titulo -Titulo "Catálogo de aplicaciones" -Subtitulo "Chocolatey · $($Apps.Count) apps"
