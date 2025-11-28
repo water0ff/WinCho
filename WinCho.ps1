@@ -874,54 +874,74 @@ function Crear-Catalogo-Desde-Instaladas {
     Write-Host "Catálogo reemplazado por la lista de aplicaciones instaladas." -ForegroundColor Green
 }
 function Choco-Listar {
-    UI-Titulo -Titulo "Catálogo de aplicaciones" -Subtitulo "Chocolatey · $($Apps.Count) elementos"
-    Write-Host "Archivo de catálogo: $($script:ConfigFile)" -ForegroundColor DarkGray
+    UI-Titulo -Titulo "Catálogo de aplicaciones" -Subtitulo "Chocolatey · $($Apps.Count) apps"
+    Write-Host "Archivo: $($script:ConfigFile)" -ForegroundColor DarkGray
     Write-Host ""
     if (-not $Apps -or $Apps.Count -eq 0) {
-        Write-Host "El catálogo está vacío. Usa el menú para agregar aplicaciones." -ForegroundColor Yellow
+        Write-Host "El catálogo está vacío." -ForegroundColor Yellow
         return
     }
-    $appsConIndice = for ($i = 0; $i -lt $Apps.Count; $i++) {
+    $apps = for ($i = 0; $i -lt $Apps.Count; $i++) {
         [PSCustomObject]@{
             Index   = $i + 1
             Nombre  = $Apps[$i].Nombre
-            ChocoId = $Apps[$i].ChocoId
+            Id      = if ($Apps[$i].ChocoId) { $Apps[$i].ChocoId } else { "(sin ID)" }
             Seccion = $Apps[$i].Seccion
         }
     }
-    $porSeccion = $appsConIndice | Group-Object Seccion
-    foreach ($grupo in $porSeccion) {
-        Write-Host ""
-        Write-Host ("=== {0} ({1}) ===" -f $grupo.Name, $grupo.Count) -ForegroundColor Cyan
-        Write-Host ("-" * (UI-GetWidth)) -ForegroundColor DarkCyan
-        foreach ($app in $grupo.Group) {
-            $lineaNombre = (" {0,2}) {1}" -f $app.Index, $app.Nombre)
-            if ($app.ChocoId) {
-                $lineaId = ("     └─ ID: {0}" -f $app.ChocoId)
-            } else {
-                $lineaId = "     └─ (sin ID de Chocolatey)"
-            }
-            Write-Host $lineaNombre -ForegroundColor White
-            Write-Host $lineaId     -ForegroundColor DarkGray
+    $secciones = $apps | Group-Object Seccion
+    foreach ($sec in $secciones) {
+        Write-Host "[Sección: $($sec.Name)]" -ForegroundColor Cyan
+        $items = $sec.Group
+        $total = $items.Count
+        $half = [math]::Ceiling($total / 2)
+        $col1 = $items[0..($half-1)]
+        $col2 = if ($half -lt $total) { $items[$half..($total-1)] } else { @() }
+        $colWidth = 40
+        for ($i = 0; $i -lt $half; $i++) {
+            $c1 = $col1[$i]
+            $text1 = if ($null -ne $c1) {
+                ("{0,2}) {1,-22} → {2}" -f $c1.Index, $c1.Nombre, $c1.Id)
+            } else { "" }
+            $c2 = if ($i -lt $col2.Count) { $col2[$i] } else { $null }
+            $text2 = if ($null -ne $c2) {
+                ("{0,2}) {1,-22} → {2}" -f $c2.Index, $c2.Nombre, $c2.Id)
+            } else { "" }
+            Write-Host ($text1.PadRight($colWidth) + " " + $text2)
         }
+        Write-Host ""
     }
-    Write-Host ""
-    UI-Hint "Tip: usa los números (1,2,3,...) cuando elijas apps en 'Instalar apps seleccionadas'."
+    UI-Hint "Tip: usa los números cuando selecciones apps."
 }
 function Winget-Listar {
-  Write-Host "`nCatálogo disponible (winget IDs):`n" -ForegroundColor Cyan
-  $half = [math]::Ceiling($Apps.Count / 2)
-  for ($i = 0; $i -lt $half; $i++) {
-    $leftIndex  = $i
-    $rightIndex = $i + $half
-    $leftText = "[{0,2}] {1,-30} -> {2,-30}" -f ($leftIndex + 1), $Apps[$leftIndex].Nombre, $Apps[$leftIndex].WingetId
-    if ($rightIndex -lt $Apps.Count) {
-      $rightText = "[{0,2}] {1,-30} -> {2}" -f ($rightIndex + 1), $Apps[$rightIndex].Nombre, $Apps[$rightIndex].WingetId
-    } else {
-      $rightText = ""
+    Write-Host ""
+    Write-Host "Catálogo disponible (winget IDs):" -ForegroundColor Cyan
+    Write-Host ""
+    if (-not $Apps -or $Apps.Count -eq 0) {
+        Write-Host "No hay aplicaciones registradas en el catálogo.`n"
+        return
     }
-    Write-Host ($leftText + "   " + $rightText)
-  }
+    $half = [math]::Ceiling($Apps.Count / 2)
+    for ($i = 0; $i -lt $half; $i++) {
+        $leftIndex  = $i
+        $rightIndex = $i + $half
+        $leftApp  = $Apps[$leftIndex]
+        $leftText = "[{0,2}] {1,-30} -> {2,-35}" -f `
+            ($leftIndex + 1), `
+            $leftApp.Nombre, `
+            $leftApp.WingetId
+        if ($rightIndex -lt $Apps.Count) {
+            $rightApp  = $Apps[$rightIndex]
+            $rightText = "[{0,2}] {1,-30} -> {2}" -f `
+                ($rightIndex + 1), `
+                $rightApp.Nombre, `
+                $rightApp.WingetId
+        } else {
+            $rightText = ""
+        }
+        Write-Host ($leftText + "   " + $rightText)
+    }
+    Write-Host ""
 }
 function Choco-Instalar { param([string[]]$ids)
   foreach ($id in $ids) {
