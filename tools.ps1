@@ -500,8 +500,19 @@ function UI-RefreshProgress {
   }
 }
 function UI-ProgressLine([string]$text) {
-  [void]$script:PaneLines.Add($text)
-  UI-RefreshProgress
+    $t     = $text -replace "`r",""
+    $trim  = $t.Trim()
+    $esSpinner = $false
+    if ($trim.Length -eq 1 -and @('/', '-', '\', '|') -contains $trim) {
+        $esSpinner = $true
+    }
+    if ($esSpinner -and $script:PaneLines.Count -gt 0) {
+        $script:PaneLines[$script:PaneLines.Count - 1] = $t
+    }
+    else {
+        [void]$script:PaneLines.Add($t)
+    }
+    UI-RefreshProgress
 }
 function Run-WithProgress {
   param(
