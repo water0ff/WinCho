@@ -311,114 +311,159 @@ function Buscar-Paquete {
   }
   Write-Host "`nBuscando paquetes, espera..." -ForegroundColor Cyan
   if ($gestor -eq "winget") {
-      $resultado = winget search $texto --source winget | Select-Object -Skip 1
-      if (-not $resultado) {
-        Write-Host "No se encontraron paquetes." -ForegroundColor Yellow
-        Pausa
-        return
-      }
-      $lista = @()
-      foreach ($linea in $resultado) {
-        try {
-          $cols = $linea -split "\s{2,}"
-          if ($cols.Count -ge 2) {
-            $obj = [PSCustomObject]@{
-              Name  = $cols[0]
-              Id    = $cols[1]
-              Info  = if ($cols.Count -ge 3) { $cols[2] } else { "" }
-            }
-            $lista += $obj
+    $resultado = winget search $texto --source winget | Select-Object -Skip 1
+    if (-not $resultado) {
+      Write-Host "No se encontraron paquetes." -ForegroundColor Yellow
+      Pausa
+      return
+    }
+    $lista = @()
+    foreach ($linea in $resultado) {
+      try {
+        $line = $linea.Trim()
+        if (-not $line) { continue }
+        $cols = $line -split "\s{2,}"
+        if ($cols.Count -ge 2) {
+          $name = $cols[0]
+          $id   = $cols[1]
+          $ver  = if ($cols.Count -ge 3) { $cols[2] } else { "" }
+          $src  = if ($cols.Count -ge 4) { $cols[3] } else { "winget" }
+
+          $obj = [PSCustomObject]@{
+            Name    = $name
+            Id      = $id
+            Version = $ver
+            Source  = $src
           }
-        } catch {}
-      }
+          $lista += $obj
+        }
+      } catch { }
+    }
   }
   elseif ($gestor -eq "choco") {
-      $raw = choco search $texto --limit-output --verbose | Where-Object {$_ -match '\|'}
-      if (-not $raw) {
-        Write-Host "No se encontraron paquetes." -ForegroundColor Yellow
-        Pausa
-        return
-      }
-      $lista = @()
-      foreach ($r in $raw) {
-        $cols = $r -split "\|"
-        if ($cols.Count -ge 2) {
-          $lista += [PSCustomObject]@{
-            Name = $cols[0]
-            Id   = $cols[0]
-            Info = "Versión: " + $cols[1]
-          }
+    $raw = choco search $texto --limit-output --verbose | Where-Object { $_ -match '\|' }
+    if (-not $raw) {
+      Write-Host "No se encontraron paquetes." -ForegroundColor Yellow
+      Pausa
+      return
+    }
+    $lista = @()
+    foreach ($r in $raw) {
+      $cols = $r -split "\|"
+      if ($cols.Count -ge 2) {
+        $lista += [PSCustomObject]@{
+          Name    = $cols[0]
+          Id      = $cols[0]
+          Version = $cols[1]
+          Source  = "chocolatey"
         }
       }
+    }
   }
-  cls
-  Write-Host "=== Resultados de búsqueda ===`n" -ForegroundColor Cyan
-  $index = 1
-  $colCount = 4
-  $perCol = [math]::Ceiling($lista.Count / $colCount)
-  for ($i=0; $i -lt $perCol; $i++) {
-    $row = ""
-    for ($c=0; $c -lt $colCount; $c++) {
-      $idx = ($i + ($c * $perCol))
-      if ($idx -lt $lista.Count) {
-        $item = $lista[$idx]
-        $text = "[{0,2}] {1}" -f $index, $item.Name
-        $row += $text.PadRight(40)
-        $index++
+  else {
+    Write-Host "Gestor desconocido." -ForegroundColor Red
+    Pausa
+    return
+  }
+  if (-not $lista -or $lista.Count -eq 0) {
+    Write-Host "No se encontraron paquetes." -ForegroundColor Yellow
+    Pausa
+    return
+  }
+  $pageSize = 10       # solo 10 resultados por página
+  $offset   = 0        # índice inicial de la página
+  $total    = $lista.Count
+  while ($true) {
+    cls
+    Write-Host "=== Resultados de búsqueda ($gestor) ===" -ForegroundColor Cyan
+    Write-Host "Mostrando resultados $($offset + 1)-$([Math]::Min($offset + $pageSize, $total)) de $total`n"
+    $end = [Math]::Min($offset + $pageSize, $total)
+    $slice = $lista[$offset..($end - 1)]
+    $colCount = 2
+    $perCol   = [math]::Ceiling($slice.Count / $colCount)
+    $colWidth = 55
+    for ($i = 0; $i -lt $perCol; $i++) {
+      $row = ""
+      for ($c = 0; $c -lt $colCount; $c++) {
+        $idxLocal = $i + ($c * $perCol)  # índice dentro de esta página
+        if ($idxLocal -lt $slice.Count) {
+          $idxGlobal  = $offset + $idxLocal
+          $item       = $slice[$idxLocal]
+          $displayNum = $idxGlobal + 1
+          $textoItem = "[{0,2}] {1} (ID: {2})" -f $displayNum, $item.Name, $item.Id
+          if ($item.Version) { $textoItem += "  v$($item.Version)" }
+          if ($item.Source)  { $textoItem += "  [$($item.Source)]" }
+
+          if ($textoItem.Length -gt $colWidth) {
+            $textoItem = $textoItem.Substring(0, $colWidth - 3) + "..."
+          }
+
+          $row += $textoItem.PadRight($colWidth)
+        }
+      }
+      if ($row.Trim().Length -gt 0) {
+        Write-Host $row
       }
     }
-    Write-Host $row
-  }
-  Write-Host "`nPuedes ver más detalles así:" -ForegroundColor DarkGray
-  Write-Host " - Winget: winget show <Id>"
-  Write-Host " - Choco: choco info <Id>`n"
-    while ($true) {
-    $sel = Read-Host "Escribe el número para instalar, 'D<num>' para ver detalles, o deja vacío para cancelar"
-
-    # Cancelar
-    if (-not $sel) {
+    Write-Host ""
+    Write-Host "Opciones:" -ForegroundColor DarkGray
+    Write-Host "  0) Cancelar"
+    if ($end -lt $total) {
+      Write-Host "  M) Mostrar más resultados (siguientes 10)"
+    }
+    Write-Host ""
+    Write-Host "También puedes:" -ForegroundColor DarkGray
+    Write-Host "  - Escribir un número para instalar ese paquete."
+    Write-Host "  - Escribir D<num> para ver detalles (ej. D3)." 
+    Write-Host ""
+    $sel = Read-Host "Escribe tu opción"
+    if ($sel -eq "0" -or [string]::IsNullOrWhiteSpace($sel)) {
       Write-Host "Cancelado." -ForegroundColor Yellow
       Pausa
       return
     }
+    if ($sel -match '^[mM]$') {
+      if ($end -ge $total) {
+        Write-Host "Ya no hay más resultados para mostrar." -ForegroundColor Yellow
+        Pausa
+      } else {
+        $offset += $pageSize
+      }
+      continue
+    }
     if ($sel -match '^[dD](\d+)$') {
       $n   = [int]$matches[1]
       $pos = $n - 1
-
       if ($pos -lt 0 -or $pos -ge $lista.Count) {
         Write-Host "Número inválido." -ForegroundColor Yellow
+        Pausa
         continue
       }
-
       $pkg = $lista[$pos]
-
       Write-Host "`nDetalles de $($pkg.Name)  (ID: $($pkg.Id))`n" -ForegroundColor Cyan
-
       if ($gestor -eq "winget") {
         winget show $($pkg.Id)
       } else {
         choco info $($pkg.Id)
       }
-      Write-Host ""
+      Pausa
       continue
     }
     if ($sel -match '^\d+$') {
       $pos = [int]$sel - 1
       if ($pos -lt 0 -or $pos -ge $lista.Count) {
         Write-Host "Opción inválida." -ForegroundColor Yellow
+        Pausa
         continue
       }
-
       $pkg = $lista[$pos]
-
       $conf = Read-Host "¿Instalar $($pkg.Name) (ID: $($pkg.Id))? (S/N)"
       if ($conf -notmatch '^[sSyY]$') {
         Write-Host "Instalación cancelada." -ForegroundColor Yellow
+        Pausa
         continue
       }
-
       Write-Host "`nInstalando: $($pkg.Name)  (ID: $($pkg.Id))" -ForegroundColor Green
-
       if ($gestor -eq "winget") {
         Winget-Instalar -ids @($pkg.Id)
       } else {
@@ -428,8 +473,8 @@ function Buscar-Paquete {
       Pausa
       return
     }
-
-    Write-Host "Entrada no válida. Usa algo como: 3  o  D3" -ForegroundColor Yellow
+    Write-Host "Entrada no válida. Usa por ejemplo: 3, D3, M o 0." -ForegroundColor Yellow
+    Pausa
   }
 }
 function UI-RefreshProgress {
