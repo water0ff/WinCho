@@ -328,7 +328,6 @@ function Buscar-Paquete {
           $id   = $cols[1]
           $ver  = if ($cols.Count -ge 3) { $cols[2] } else { "" }
           $src  = if ($cols.Count -ge 4) { $cols[3] } else { "winget" }
-
           $obj = [PSCustomObject]@{
             Name    = $name
             Id      = $id
@@ -371,39 +370,47 @@ function Buscar-Paquete {
     return
   }
   $pageSize = 10       # solo 10 resultados por página
-  $offset   = 0        # índice inicial de la página
+  $offset   = 0        # índice inicial
   $total    = $lista.Count
   while ($true) {
     cls
     Write-Host "=== Resultados de búsqueda ($gestor) ===" -ForegroundColor Cyan
     Write-Host "Mostrando resultados $($offset + 1)-$([Math]::Min($offset + $pageSize, $total)) de $total`n"
-    $end = [Math]::Min($offset + $pageSize, $total)
-    $slice = $lista[$offset..($end - 1)]
+    $end       = [Math]::Min($offset + $pageSize, $total)
+    $indices   = $offset..($end - 1)
+    $pageCount = $indices.Count
     $colCount = 2
-    $perCol   = [math]::Ceiling($slice.Count / $colCount)
-    $colWidth = 55
+    $winWidth = 80
+    try { $winWidth = [System.Console]::WindowWidth } catch { }
+    $colWidth = [Math]::Floor(($winWidth - 4) / $colCount)
+    if ($colWidth -lt 30) { $colWidth = 30 }
+    $perCol = [math]::Ceiling($pageCount / $colCount)
     for ($i = 0; $i -lt $perCol; $i++) {
-      $row = ""
+      $row1 = ""
+      $row2 = ""
       for ($c = 0; $c -lt $colCount; $c++) {
-        $idxLocal = $i + ($c * $perCol)  # índice dentro de esta página
-        if ($idxLocal -lt $slice.Count) {
-          $idxGlobal  = $offset + $idxLocal
-          $item       = $slice[$idxLocal]
+        $idxLocal = $i + ($c * $perCol)
+        if ($idxLocal -lt $pageCount) {
+          $idxGlobal  = $indices[$idxLocal]
+          $item       = $lista[$idxGlobal]
           $displayNum = $idxGlobal + 1
-          $textoItem = "[{0,2}] {1} (ID: {2})" -f $displayNum, $item.Name, $item.Id
-          if ($item.Version) { $textoItem += "  v$($item.Version)" }
-          if ($item.Source)  { $textoItem += "  [$($item.Source)]" }
-
-          if ($textoItem.Length -gt $colWidth) {
-            $textoItem = $textoItem.Substring(0, $colWidth - 3) + "..."
+          $line1 = "[{0,2}] {1}" -f $displayNum, $item.Name
+          $line2 = "     ID: {0}" -f $item.Id
+          if ($item.Version) { $line2 += "  v$($item.Version)" }
+          if ($item.Source)  { $line2 += "  [$($item.Source)]" }
+          if ($line1.Length -gt $colWidth) {
+            $line1 = $line1.Substring(0, $colWidth - 3) + "..."
           }
-
-          $row += $textoItem.PadRight($colWidth)
+          if ($line2.Length -gt $colWidth) {
+            $line2 = $line2.Substring(0, $colWidth - 3) + "..."
+          }
+          $row1 += $line1.PadRight($colWidth)
+          $row2 += $line2.PadRight($colWidth)
         }
       }
-      if ($row.Trim().Length -gt 0) {
-        Write-Host $row
-      }
+      if ($row1.Trim().Length -gt 0) { Write-Host $row1 }
+      if ($row2.Trim().Length -gt 0) { Write-Host $row2 }
+      Write-Host ""
     }
     Write-Host ""
     Write-Host "Opciones:" -ForegroundColor DarkGray
@@ -469,7 +476,6 @@ function Buscar-Paquete {
       } else {
         Choco-Instalar -ids @($pkg.Id)
       }
-
       Pausa
       return
     }
