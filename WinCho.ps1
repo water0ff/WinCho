@@ -1,4 +1,13 @@
 cls
+function Pausa {
+  Write-Host ""
+  Write-Host "Presiona [Enter] para continuar..." -ForegroundColor Yellow -NoNewline
+  $null = ask
+}
+function Ask([string]$msg) {
+    Write-Host $msg -ForegroundColor Yellow -NoNewline
+    return ask ":"
+}
 function Mostrar-VersionPS {
   try {
     if ($PSVersionTable) {
@@ -28,7 +37,7 @@ function Actualizar-PowerShell {
   Write-Host "  1) Instalar/Actualizar PowerShell 7 (recomendado, side-by-side)"
   Write-Host "  2) Información para Windows PowerShell 5.1 (WMF 5.1)"
   Write-Host "  0) Volver"
-  $opc = Read-Host "Opción"
+  $opc = ask "Opción"
   if ($opc -eq "1") {
     if ($gestor -eq "choco") {
       Choco-Instalar -ids @("powershell-core")
@@ -63,10 +72,6 @@ function Actualizar-PowerShell {
     return
   }
   return
-}
-function Pausa {
-  Write-Host ""
-  $null = Read-Host "Presiona [Enter] para continuar..."
 }
 function EsAdmin {
   $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -271,7 +276,7 @@ function Buscar-Paquete {
   param([string]$gestor)
   cls
   Write-Host "=== Buscar e instalar paquete ($gestor) ===" -ForegroundColor Cyan
-  $texto = Read-Host "Escribe el nombre del paquete a buscar"
+  $texto = ask "Escribe el nombre del paquete a buscar"
   if ([string]::IsNullOrWhiteSpace($texto)) {
     Write-Host "Texto vacío. Cancelado." -ForegroundColor Yellow
     Pausa
@@ -391,7 +396,7 @@ function Buscar-Paquete {
     Write-Host "  - Escribir un número para instalar ese paquete."
     Write-Host "  - Escribir D<num> para ver detalles (ej. D3)." 
     Write-Host ""
-    $sel = Read-Host "Escribe tu opción"
+    $sel = Ask "Escribe tu opción"
     if ($sel -eq "0" -or [string]::IsNullOrWhiteSpace($sel)) {
       return
     }
@@ -430,7 +435,7 @@ function Buscar-Paquete {
         continue
       }
       $pkg = $lista[$pos]
-      $conf = Read-Host "¿Instalar $($pkg.Name) (ID: $($pkg.Id))? (S/N)"
+      $conf = Ask "¿Instalar $($pkg.Name) (ID: $($pkg.Id))? (S/N)"
       if ($conf -notmatch '^[sSyY]$') {
         Write-Host "Instalación cancelada." -ForegroundColor Yellow
         Pausa
@@ -529,16 +534,10 @@ function Instalar-Choco {
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = `
             [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-
-        # Descargar e instalar Chocolatey
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
         Write-Host "`nChocolatey se instaló correctamente." -ForegroundColor Green
-
-        # Configurar cacheLocation en C:
         Write-Host "Configurando Chocolatey (cacheLocation en C:\Choco\cache)..." -ForegroundColor Yellow
         choco config set cacheLocation 'C:\Choco\cache' | Out-Null
-
         Write-Host "`nChocolatey quedó instalado y configurado." -ForegroundColor Green
         Write-Host "Si 'choco' no se reconoce, cierra y vuelve a abrir PowerShell." -ForegroundColor Yellow
     }
@@ -672,7 +671,7 @@ function Elegir-Gestor {
   Write-Host "  1) Chocolatey"
   Write-Host "  2) winget"
   Write-Host "  0) Salir"
-  $op = Read-Host "Opción"
+  $op = ask "Opción"
   if ($op -eq "1") { return "choco" }
   if ($op -eq "2") { return "winget" }
   if ($op -eq "0") { return $null }
@@ -715,7 +714,7 @@ function Menu-Acciones {
     Write-Host "  6) Buscar paquete e instalar"
     Write-Host "  9) Cambiar de gestor"
     Write-Host "  0) Salir"
-    $acc = Read-Host "Opción"
+    $acc = ask "Opción"
 
     if ($acc -eq "1") {
       if ($gestor -eq "choco") { Choco-Listar } else { Winget-Listar }
@@ -731,7 +730,7 @@ function Menu-Acciones {
     }
     elseif ($acc -eq "3") {
       if ($gestor -eq "choco") { Choco-Listar } else { Winget-Listar }
-      $sel = Read-Host "Escribe los números separados por coma (ej. 1,3,5)"
+      $sel = ask "Escribe los números separados por coma (ej. 1,3,5)"
       $nums = $sel -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' }
       if ($nums.Count -eq 0) {
         Write-Host "Selección vacía o inválida." -ForegroundColor Yellow
