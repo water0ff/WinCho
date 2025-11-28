@@ -874,22 +874,39 @@ function Crear-Catalogo-Desde-Instaladas {
     Write-Host "Catálogo reemplazado por la lista de aplicaciones instaladas." -ForegroundColor Green
 }
 function Choco-Listar {
-  Write-Host "`nCatálogo disponible (Chocolatey IDs):`n" -ForegroundColor Cyan
-  Write-Host "Archivo de catálogo: $($script:ConfigFile)" -ForegroundColor DarkGray
-  $half = [math]::Ceiling($Apps.Count / 2)
-  for ($i = 0; $i -lt $half; $i++) {
-    $leftIndex  = $i
-    $rightIndex = $i + $half
-    $leftApp  = $Apps[$leftIndex]
-    $leftText = "[{0,2}] {1,-30} -> {2,-25} [{3}]" -f ($leftIndex + 1), $leftApp.Nombre, $leftApp.ChocoId, $leftApp.Seccion
-    if ($rightIndex -lt $Apps.Count) {
-      $rightApp  = $Apps[$rightIndex]
-      $rightText = "[{0,2}] {1,-30} -> {2} [{3}]" -f ($rightIndex + 1), $rightApp.Nombre, $rightApp.ChocoId, $rightApp.Seccion
-    } else {
-      $rightText = ""
+    UI-Titulo -Titulo "Catálogo de aplicaciones" -Subtitulo "Chocolatey · $($Apps.Count) elementos"
+    Write-Host "Archivo de catálogo: $($script:ConfigFile)" -ForegroundColor DarkGray
+    Write-Host ""
+    if (-not $Apps -or $Apps.Count -eq 0) {
+        Write-Host "El catálogo está vacío. Usa el menú para agregar aplicaciones." -ForegroundColor Yellow
+        return
     }
-    Write-Host ($leftText + "   " + $rightText)
-  }
+    $appsConIndice = for ($i = 0; $i -lt $Apps.Count; $i++) {
+        [PSCustomObject]@{
+            Index   = $i + 1
+            Nombre  = $Apps[$i].Nombre
+            ChocoId = $Apps[$i].ChocoId
+            Seccion = $Apps[$i].Seccion
+        }
+    }
+    $porSeccion = $appsConIndice | Group-Object Seccion
+    foreach ($grupo in $porSeccion) {
+        Write-Host ""
+        Write-Host ("=== {0} ({1}) ===" -f $grupo.Name, $grupo.Count) -ForegroundColor Cyan
+        Write-Host ("-" * (UI-GetWidth)) -ForegroundColor DarkCyan
+        foreach ($app in $grupo.Group) {
+            $lineaNombre = (" {0,2}) {1}" -f $app.Index, $app.Nombre)
+            if ($app.ChocoId) {
+                $lineaId = ("     └─ ID: {0}" -f $app.ChocoId)
+            } else {
+                $lineaId = "     └─ (sin ID de Chocolatey)"
+            }
+            Write-Host $lineaNombre -ForegroundColor White
+            Write-Host $lineaId     -ForegroundColor DarkGray
+        }
+    }
+    Write-Host ""
+    UI-Hint "Tip: usa los números (1,2,3,...) cuando elijas apps en 'Instalar apps seleccionadas'."
 }
 function Winget-Listar {
   Write-Host "`nCatálogo disponible (winget IDs):`n" -ForegroundColor Cyan
