@@ -652,7 +652,8 @@ function Ensure-ConfigFolder {
 }
 function Guardar-Catalogo {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]      # 👈 ESTA LÍNEA NUEVA
         [array]$Apps
     )
     Ensure-ConfigFolder
@@ -725,6 +726,7 @@ function Editar-Catalogo {
             if ($conf -match '^[sSyY]$') {
                 $script:Apps = @()
                 Set-Variable -Name Apps -Scope Script -Value $script:Apps
+                if ($null -eq $Apps) { $Apps = @() }
                 Guardar-Catalogo -Apps $Apps
                 Write-Host "Catálogo vacío guardado." -ForegroundColor Green
             }
