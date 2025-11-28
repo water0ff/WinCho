@@ -114,22 +114,15 @@ function Remove-JsonComments {
   return $noLine
 }
 function Get-WT-SettingsPath {
-  # Rutas típicas (Store y no-Store)
   $store     = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
   $storePrev = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json"
   $unpkg     = Join-Path $env:LOCALAPPDATA "Microsoft\Windows Terminal\settings.json"
-
-  # Si existe, prioriza en este orden
   foreach ($p in @($store, $storePrev, $unpkg)) { if (Test-Path $p) { return $p } }
-
-  # Si no existe ninguno, devuelve la ruta preferida (Store) para crearla luego
   return $store
 }
 function Set-WindowsTerminalDefaultPwsh {
   [CmdletBinding()]
   param()
-
-  # 1) Localizar pwsh.exe
   $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
   $pwshExe = if ($pwshCmd) {
     $pwshCmd.Source
@@ -139,36 +132,27 @@ function Set-WindowsTerminalDefaultPwsh {
       "$env:ProgramFiles(x86)\PowerShell\7\pwsh.exe"
     ) | Where-Object { Test-Path $_ } | Select-Object -First 1
   }
-
   if (-not $pwshExe) {
     Write-Host "No encontré pwsh.exe. (Instala PowerShell 7 primero)" -ForegroundColor Yellow
     return $false
   }
-
-  # 2) Verificar Windows Terminal
   $wt = Get-Command wt -ErrorAction SilentlyContinue
   if (-not $wt) {
     Write-Host "Windows Terminal no parece estar instalado (no se encontró 'wt')." -ForegroundColor Yellow
     Write-Host "Instálalo con: winget install --id Microsoft.WindowsTerminal" -ForegroundColor Yellow
     return $false
   }
-
-  # 3) Ruta de settings.json
   $settingsPath = Get-WT-SettingsPath
   $settingsDir  = Split-Path $settingsPath -Parent
   if (-not (Test-Path $settingsDir)) {
     New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null
   }
-
-  # 4) Intentar leer settings.json existente
   $json = $null
   if (Test-Path $settingsPath) {
     try {
       $raw   = Get-Content $settingsPath -Raw -ErrorAction Stop
       $clean = Remove-JsonComments -JsonWithComments $raw
       $tmp   = $clean | ConvertFrom-Json -ErrorAction Stop
-
-      # Solo usamos el JSON existente si tiene 'profiles'
       if ($tmp -and $tmp.profiles) {
         $json = $tmp
       }
@@ -177,8 +161,6 @@ function Set-WindowsTerminalDefaultPwsh {
       $json = $null
     }
   }
-
-  # 5) Si no hay JSON usable, crear uno mínimo
   if (-not $json) {
     $newGuid = "{"+([guid]::NewGuid().ToString())+"}"
     $json = [PSCustomObject]@{
@@ -198,29 +180,21 @@ function Set-WindowsTerminalDefaultPwsh {
     Write-Host "Creando settings.json mínimo para Windows Terminal..." -ForegroundColor Cyan
   }
   else {
-    # 6) Asegurar estructura profiles.list como array
     if (-not $json.profiles) {
       $json | Add-Member -NotePropertyName profiles -NotePropertyValue ([PSCustomObject]@{ list = @() }) -Force
     }
-
     if (-not $json.profiles.list) {
       $json.profiles | Add-Member -NotePropertyName list -NotePropertyValue @() -Force
     }
-
     if ($json.profiles.list -isnot [System.Collections.IList]) {
       $json.profiles.list = @($json.profiles.list)
     }
-
     $profilesList = $json.profiles.list
-
-    # 7) Buscar perfil que ya use pwsh o se llame "PowerShell 7"
     $pwshProfile = $profilesList | Where-Object {
       ($_.commandline -and $_.commandline -match 'pwsh(?:\.exe)?') -or
       ($_.name -match 'PowerShell 7')
     } | Select-Object -First 1
-
     if (-not $pwshProfile) {
-      # Reusar "Windows PowerShell" si existe
       $winps = $profilesList | Where-Object { $_.name -eq 'Windows PowerShell' } | Select-Object -First 1
       if ($winps) {
         $winps.commandline = "`"$pwshExe`" -NoExit -NoProfile"
@@ -229,7 +203,6 @@ function Set-WindowsTerminalDefaultPwsh {
         Write-Host "Perfil 'Windows PowerShell' apuntado a pwsh.exe" -ForegroundColor Green
       }
       else {
-        # Crear perfil nuevo
         $newGuid = "{"+([guid]::NewGuid().ToString())+"}"
         $newProf = [PSCustomObject]@{
           guid        = $newGuid
@@ -243,18 +216,13 @@ function Set-WindowsTerminalDefaultPwsh {
       }
     }
     else {
-      # Asegurar que apunta al pwsh correcto
       $pwshProfile.commandline = "`"$pwshExe`" -NoExit -NoProfile"
       if (-not $pwshProfile.guid) {
         $pwshProfile.guid = "{"+([guid]::NewGuid().ToString())+"}"
       }
     }
-
-    # 8) Establecer defaultProfile
     $json.defaultProfile = $pwshProfile.guid
   }
-
-  # 9) Respaldar y guardar settings.json
   $bak = "$settingsPath.bak.$((Get-Date).ToString('yyyyMMddHHmmss'))"
   try {
     if (Test-Path $settingsPath) {
@@ -500,18 +468,41 @@ function UI-RefreshProgress {
   }
 }
 function UI-ProgressLine([string]$text) {
-    $t     = $text -replace "`r",""
-    $trim  = $t.Trim()
+    $t    = $text -replace "`r",""
+    $trim = $t.Trim()
     $esSpinner = $false
     if ($trim.Length -eq 1 -and @('/', '-', '\', '|') -contains $trim) {
         $esSpinner = $true
     }
+    $esProgreso = $false
+    if ($trim.StartsWith("Progress:", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $esProgreso = $true
+    }
     if ($esSpinner -and $script:PaneLines.Count -gt 0) {
         $script:PaneLines[$script:PaneLines.Count - 1] = $t
+        UI-RefreshProgress
+        return
     }
-    else {
-        [void]$script:PaneLines.Add($t)
+    if ($esProgreso -and $script:PaneLines.Count -gt 0) {
+        $last     = $script:PaneLines[$script:PaneLines.Count - 1]
+        $lastTrim = $last.Trim()
+        if ($lastTrim.StartsWith("Progress:", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $pctCur  = ([regex]::Match($trim, '(\d+)%$')).Groups[1].Value
+            $pctLast = ([regex]::Match($lastTrim, '(\d+)%$')).Groups[1].Value
+            if ($pctCur -and $pctLast -and $pctCur -eq $pctLast) {
+                return
+            }
+            $script:PaneLines[$script:PaneLines.Count - 1] = $t
+            UI-RefreshProgress
+            return
+        }
+        else {
+            [void]$script:PaneLines.Add($t)
+            UI-RefreshProgress
+            return
+        }
     }
+    [void]$script:PaneLines.Add($t)
     UI-RefreshProgress
 }
 function Run-WithProgress {
